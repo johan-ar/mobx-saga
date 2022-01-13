@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "name": "decorators",
+  "source": "../src/decorators/index.ts",
+  "main": "../dist/decorators/index.js",
+  "module": "../dist/decorators/index.mjs",
+  "types": "../dist/decorators/index.d.ts"
+}

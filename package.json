@@ -1,7 +1,7 @@
 {
   "name": "@johan-ar/mobx-saga",
   "description": "A bridge between Redux-Saga and MobX",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "johan ar",
   "license": "MIT",
   "repository": {
@@ -13,7 +13,7 @@
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "files": [
-    "decorators/index.ts"
+    "dist"
   ],
   "scripts": {
     "build": "parcel build . ./decorators"

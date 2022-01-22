@@ -1,12 +1,15 @@
 {
   "name": "@jsar/mobx-saga",
   "description": "A bridge between Redux-Saga and MobX",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "author": "johan ar",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git@github.com:johan-ar/mobx-saga.git"
+  },
+  "bugs": {
+    "url": "https://github.com/johan-ar/mobx-saga/issues"
   },
   "targets": {
     "main": {

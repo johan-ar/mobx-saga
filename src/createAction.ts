@@ -2,23 +2,16 @@ import { A } from "ts-toolbelt";
 
 export type NonUndefined<T> = Exclude<T, undefined | null | void>;
 
-export type ActionExtension<O> = O extends void
-  ? {}
-  : A.Compute<Omit<O, "type" | "payload">, "flat">;
-
 export type PayloadAction<
   P = void,
   T extends string = string,
-  Ex extends { [k: string]: any } = never
-> = [Ex] extends [never]
-  ? {
-      type: T;
-      payload: P;
-    }
-  : {
-      type: T;
-      payload: P;
-    } & ActionExtension<Ex>;
+  M = never,
+  E = never
+> = {
+  type: T;
+  payload: P;
+} & ([M] extends [never] ? {} : { meta: M }) &
+  ([E] extends [never] ? {} : { error: E });
 
 export interface Action<T extends string = string> {
   type: T;
@@ -49,35 +42,50 @@ export interface ActionCreatorWithPayload<P, T extends string = string>
   (payload: P): PayloadAction<P, T>;
 }
 
+export type ActionCreatorWithPreparedPayloadHelper<
+  PA extends PrepareAction<any>,
+  T extends string
+> = ActionCreatorWithPreparedPayload<
+  ReturnType<PA> extends { payload: infer P } ? P : never,
+  T,
+  Parameters<PA>,
+  ReturnType<PA> extends { meta: infer M } ? M : never,
+  ReturnType<PA> extends { error: infer E } ? E : never
+>;
+
 export interface ActionCreatorWithPreparedPayload<
-  T extends string,
-  PA extends PrepareAction<any>
-> extends BaseActionCreator<ReturnType<PA>["payload"], T> {
-  (...args: Parameters<PA>): PayloadAction<
-    ReturnType<PA>["payload"],
-    T,
-    ReturnType<PA>
-  >;
+  P,
+  T extends string = string,
+  Args extends any[] = any[],
+  M = never,
+  E = never
+> extends BaseActionCreator<P, T> {
+  (...args: Args): PayloadAction<P, T, M, E>;
 }
 
 // prettier-ignore
-export type ActionCreator<P, T extends string = string, PA = void> =
+export type ActionCreator<
+  P = undefined,
+  T extends string = string,
+  PA extends PrepareAction<any> | void = void
+> =
   PA extends PrepareAction<any> ?
-      ActionCreatorWithPreparedPayload<T, PA>
-  : [P] extends [undefined] ?
+      ActionCreatorWithPreparedPayloadHelper<PA, T>
+  : A.Is<P, undefined, 'equals'> extends 1 ?
       ActionCreatorWithoutPayload<T>
-  : [undefined] extends [P] ?
+  : A.Is<P, undefined, '<-contains'> extends 1 ?
       ActionCreatorWithOptionalPayload<NonUndefined<P>, T>
   : ActionCreatorWithPayload<P, T>;
 
-type PrepareAction<P> = (...args: any[]) => {
+export type PrepareAction<P> = (...args: any[]) => {
   payload: P;
-  [K: string | symbol | number]: any;
+  meta?: any;
+  error?: any;
 };
 
 export function createAction<P = undefined, T extends string = string>(
   type: T
-): ActionCreator<P, T>;
+): ActionCreator<P, T, void>;
 
 export function createAction<
   PA extends PrepareAction<any>,
@@ -88,15 +96,20 @@ export function createAction(type: string, prepareAction?: PrepareAction<any>) {
   let actionCreator;
 
   if (prepareAction) {
-    actionCreator = <ActionCreator<any>>{
+    actionCreator = <ActionCreator<any, string, PrepareAction<any>>>{
       [type](...args: any[]) {
         const action = prepareAction(...args);
-        action.type = type;
-        return action;
+
+        return {
+          type: type,
+          payload: action.payload,
+          ...("meta" in action && { meta: action.meta }),
+          ...("error" in action && { meta: action.error }),
+        };
       },
     }[type];
   } else {
-    actionCreator = <ActionCreator<any>>{
+    actionCreator = <ActionCreator<any, string>>{
       [type](payload?: any) {
         return { type, payload };
       },
